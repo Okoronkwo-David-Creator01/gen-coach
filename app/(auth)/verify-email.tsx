@@ -75,7 +75,7 @@ export default function VerifyEmail() {
         
         <Text style={styles.title}>Verify Your Email</Text>
         <Text style={styles.description}>
-          We've sent a verification code to{'\n'}
+          We&apos;ve sent a verification code to{'\n'}
           <Text style={styles.email}>{email}</Text>
         </Text>
 
@@ -111,7 +111,7 @@ export default function VerifyEmail() {
           onPress={handleResendCode}
           disabled={loading}
         >
-          <Text style={styles.resendButtonText}>Didn't receive code? Resend</Text>
+          <Text style={styles.resendButtonText}>Didn&apos;t receive code? Resend</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

@@ -1,9 +1,13 @@
-import { useSignIn } from '@clerk/clerk-expo'
+import { useSignIn, useOAuth } from '@clerk/clerk-expo'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
+import * as WebBrowser from 'expo-web-browser'
+import { makeRedirectUri } from 'expo-auth-session'
+
+WebBrowser.maybeCompleteAuthSession()
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -11,31 +15,26 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false)
 
   const { isLoaded, signIn, setActive } = useSignIn()
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' })
   const router = useRouter()
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true)
-      if (!isLoaded) return
-
-      const { supportedFirstFactors } = await signIn.create({
-        strategy: "oauth_google",
+      const redirectUrl = makeRedirectUri({
+        scheme: 'gencoach',
+        path: '/oauth-native-callback'
       })
-
-      const googleOAuth = supportedFirstFactors?.find(
-        (factor) => factor.strategy === "oauth_google"
-      )
-
-      if (googleOAuth) {
-        const { externalAccount } = googleOAuth as any
-        if (externalAccount) {
-          await setActive({ session: externalAccount.id })
-          router.replace("/(tabs)")
-        }
+      
+      const { createdSessionId, setActive: setActiveSession } = await startOAuthFlow({ redirectUrl })
+      
+      if (createdSessionId && setActiveSession) {
+        await setActiveSession({ session: createdSessionId })
+        router.replace("/(tabs)")
       }
     } catch (error: any) {
       console.error("Google OAuth error:", error)
-      Alert.alert("Error", error.errors?.[0]?.message || "Failed to sign in with Google")
+      Alert.alert("Error", "Failed to sign in with Google")
     } finally {
       setLoading(false)
     }
