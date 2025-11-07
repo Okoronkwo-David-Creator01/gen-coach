@@ -1,245 +1,326 @@
-import { useSSO } from '@clerk/clerk-expo'
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSignIn } from '@clerk/clerk-expo'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
+
 export default function SignIn() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { isLoaded, signIn, setActive } = useSignIn()
+  const router = useRouter()
 
-    const { startSSOFlow } = useSSO()
-    const router = useRouter();
-  
-  
-    const handleGoogleSignIn = async () => {
-      try {
-        const { createdSessionId, setActive } = await startSSOFlow({ strategy: "oauth_google" })
-  
-        if (setActive && createdSessionId) {
-          setActive({ session: createdSessionId })
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true)
+      if (!isLoaded) return
+
+      const { supportedFirstFactors } = await signIn.create({
+        strategy: "oauth_google",
+      })
+
+      const googleOAuth = supportedFirstFactors?.find(
+        (factor) => factor.strategy === "oauth_google"
+      )
+
+      if (googleOAuth) {
+        const { externalAccount } = googleOAuth as any
+        if (externalAccount) {
+          await setActive({ session: externalAccount.id })
           router.replace("/(tabs)")
         }
-      } catch (error) {
-        console.error("OAuth error:", error);
       }
+    } catch (error: any) {
+      console.error("Google OAuth error:", error)
+      Alert.alert("Error", error.errors?.[0]?.message || "Failed to sign in with Google")
+    } finally {
+      setLoading(false)
     }
-  
+  }
+
+  const handleSignIn = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Error", "Please enter your email and password")
+      return
+    }
+
+    try {
+      setLoading(true)
+      if (!isLoaded) return
+
+      const completeSignIn = await signIn.create({
+        identifier: email.trim(),
+        password: password,
+      })
+
+      if (completeSignIn.status === "complete") {
+        await setActive({ session: completeSignIn.createdSessionId })
+        router.replace("/(tabs)")
+      } else {
+        Alert.alert("Error", "Sign in failed. Please try again.")
+      }
+    } catch (error: any) {
+      console.error("Sign in error:", error)
+      Alert.alert("Error", error.errors?.[0]?.message || "Invalid email or password")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <LinearGradient
-    colors = {['#001f0f', '#003e1d', '#007900ff']} 
-    style={styles.container}>
-
-      {/* Brand Name Section */}
-      <View style={styles.brandSection}>
-
-        <View style={styles.logoSection}>
-          <Image source={require("../../assets/images/gencoach1.png")} />
-        </View>
-
+      colors={["#001f0f", "#003e1d", "#004d26"]}
+      style={styles.container}
+    >
+      <View style={styles.logoSection}>
+        <Image 
+          source={require("../../assets/images/gencoach1.png")} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.subTitle}>AI-powered learning made simple</Text>
-
       </View>
-      <View style = {styles.borderLine}>
-        <Text style={styles.borderTitle}>Welcome Back</Text>
 
-        <View style = {styles.toggleContainer}>
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>Welcome Back</Text>
 
-          <TouchableOpacity 
-          style = {[styles.toggleButton, styles.active]}>
-
-            <Text style = {styles.toggleTextActive}>Sign In</Text>
-
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity style={[styles.toggleButton, styles.active]}>
+            <Text style={styles.toggleTextActive}>Sign In</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-          style = {[styles.toggleButton, styles.inactive]} 
-          onPress = {() => router.push('/(auth)/Register')}>
-
-            <Text style = {styles.toggleTextInactive}>Register</Text>
-
+            style={[styles.toggleButton, styles.inactive]}
+            onPress={() => router.push('/(auth)/Register')}
+          >
+            <Text style={styles.toggleTextInactive}>Sign Up</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Email Section */}
         <View style={styles.inputContainer}>
-          <MaterialIcons name="email" size={20} color="#b3ffcb" style={styles.icon} />
+          <MaterialIcons name="email" size={20} color="#7f7f7f" style={styles.icon} />
           <TextInput 
-          style = {styles.input}
-          placeholder = "Enter Your Email"
-          placeholderTextColor = "#b3ffcb99"
-          value = {email}
-          onChangeText = {setEmail}
-          keyboardType ="email-address"
+            style={styles.input}
+            placeholder="Enter Your Email"
+            placeholderTextColor="#7f7f7f"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!loading}
           />
         </View>
 
-        {/* Password Section */}
-        <View
-        style = {styles.inputContainer}>
-          <Ionicons name = 'lock-closed-outline' size = {20} color = "#b3ffcb"
-          style = {styles.icon} />
-
-          <TextInput
-          style = {styles.input}
-          placeholder = "Enter Your Password"
-          placeholderTextColor = "#b3ffcb99"
-          secureTextEntry
-          value = {password}
-          onChangeText = {setPassword}
+        <View style={styles.inputContainer}>
+          <Ionicons name="lock-closed-outline" size={20} color="#7f7f7f" style={styles.icon} />
+          <TextInput 
+            style={styles.input}
+            placeholder="Enter Your Password"
+            placeholderTextColor="#7f7f7f"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            editable={!loading}
           />
         </View>
 
         <TouchableOpacity 
-        onPress={() => router.push('/(auth)/Forgot-Password')}>
-          <Text style={styles.forgotText}>Forgot Password ?</Text>
-         </TouchableOpacity>
+          onPress={() => router.push('/(auth)/Forgot-Password')}
+          disabled={loading}
+        >
+          <Text style={styles.forgotText}>Forgot Password?</Text>
+        </TouchableOpacity>
 
-         <TouchableOpacity
-         style = {styles.signInButton}>
-          <Text style = {styles.signInButtonText}>Sign-In</Text>
-         </TouchableOpacity>
-         
-         <Text style={styles.OrText}>Or</Text>
+        <TouchableOpacity
+          style={[styles.signInButton, loading && styles.buttonDisabled]}
+          onPress={handleSignIn}
+          activeOpacity={0.8}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#003e1d" />
+          ) : (
+            <Text style={styles.signInButtonText}>Sign In</Text>
+          )}
+        </TouchableOpacity>
 
-         <TouchableOpacity
-         style={styles.googleButton}
-         onPress={handleGoogleSignIn}
-         activeOpacity={0.9}>
-          <Ionicons name="logo-google" size={18} color="#fff" />
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>Or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <TouchableOpacity
+          style={[styles.googleButton, loading && styles.buttonDisabled]}
+          onPress={handleGoogleSignIn}
+          activeOpacity={0.8}
+          disabled={loading}
+        >
+          <Ionicons name="logo-google" size={18} color="#b3ffcb" />
           <Text style={styles.googleButtonText}>Continue with Google</Text>
-         </TouchableOpacity>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.footerShapes}>
-        <View style={[styles.block, { bottom: 50, left: 30 }]} />
-        <View style={[styles.block, { bottom: 30, right: 50 }]} />
+        <View style={[styles.block, { bottom: 80, left: 20, transform: [{ rotate: '45deg' }] }]} />
+        <View style={[styles.block, { bottom: 120, right: 60, transform: [{ rotate: '30deg' }] }]} />
+        <View style={[styles.block, { bottom: 50, right: 20, transform: [{ rotate: '60deg' }] }]} />
       </View>
     </LinearGradient>
-  );
+  )
 }
 
-const styles = StyleSheet.create ({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  brandSection: {
-    alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 20,
   },
   logoSection: {
     alignItems: 'center',
-    marginTop: 5,
+    marginBottom: 30,
+  },
+  logo: {
+    width: 200,
+    height: 60,
   },
   subTitle: {
-    color: '#b3ffcb99',
-    fontSize: 24,
-    marginTop: 4,
-    textAlign: 'center',
+    color: '#7f7f7f',
+    fontSize: 14,
+    marginTop: 8,
   },
-  borderLine: {
-    width: '85%',
-    backgroundColor: 'rgba(0, 40, 20, 0.3)',
-    borderRadius: 16,
-    padding: 20,
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: 'rgba(0, 50, 25, 0.4)',
+    borderRadius: 20,
+    padding: 24,
     borderWidth: 1,
-    borderColor: '#00ff99'
+    borderColor: '#003e1d',
   },
-  borderTitle: {
+  title: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   toggleContainer: {
     flexDirection: 'row',
-    marginBottom: 15,
+    marginBottom: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 25,
+    borderRadius: 30,
+    padding: 4,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 25,
+    borderRadius: 26,
   },
   active: {
     backgroundColor: '#00ff99',
   },
-  inactive: {},
+  inactive: {
+    backgroundColor: 'transparent',
+  },
   toggleTextActive: {
     color: '#003e1d',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 14,
   },
   toggleTextInactive: {
-    color: '#b3ffcb'
+    color: '#7f7f7f',
+    fontWeight: '600',
+    fontSize: 14,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 60, 30, 0.5)',
-    borderRadius: 10,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 30,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#003e1d',
   },
   icon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   input: {
     flex: 1,
     color: '#fff',
-    paddingVertical: 10,
+    paddingVertical: 14,
+    fontSize: 14,
   },
   forgotText: {
-    color: '#b3ffcb99',
+    color: '#00ff99',
     textAlign: 'right',
-    marginBottom: 15,
+    marginBottom: 16,
+    fontSize: 13,
   },
   signInButton: {
     backgroundColor: '#00ff99',
-    borderRadius: 25,
-    paddingVertical: 12,
+    borderRadius: 30,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
   },
   signInButtonText: {
     color: '#003e1d',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 15,
   },
-  OrText: {
-    color: '#b3ffcb99',
-    textAlign: 'center',
-    marginVertical: 10,
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#003e1d',
+  },
+  dividerText: {
+    color: '#7f7f7f',
+    marginHorizontal: 12,
+    fontSize: 13,
   },
   googleButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: '#004d1f',
-    paddingVertical: 12,
-    borderRadius: 25,
+    backgroundColor: 'transparent',
+    paddingVertical: 14,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#003e1d',
   },
   googleButtonText: {
-    color: '#fff',
-    marginLeft: 8,
-    fontWeight: '600'
+    color: '#b3ffcb',
+    marginLeft: 10,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   footerShapes: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: 100,
+    height: 200,
   },
   block: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     backgroundColor: '#00ff99',
-    transform: [{ rotate: '45deg' }],
     position: "absolute",
+    opacity: 0.3,
   },
-
 })
