@@ -83,7 +83,7 @@ export default function Register() {
 
   return (
     <LinearGradient
-      colors={["#001f0f", "#003e1d", "#004d26"]}
+      colors={["#000000", "#001a0d", "#003319"]}
       style={styles.container}
     >
       <View style={styles.logoSection}>
@@ -208,18 +208,18 @@ const styles = StyleSheet.create({
     height: 60,
   },
   subTitle: {
-    color: '#7f7f7f',
+    color: '#6b8577',
     fontSize: 14,
     marginTop: 8,
   },
   formContainer: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: 'rgba(0, 50, 25, 0.4)',
+    backgroundColor: 'rgba(0, 30, 15, 0.5)',
     borderRadius: 20,
     padding: 24,
-    borderWidth: 1,
-    borderColor: '#003e1d',
+    borderWidth: 1.5,
+    borderColor: '#1a3d2e',
   },
   title: {
     color: '#fff',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   toggleContainer: {
     flexDirection: 'row',
     marginBottom: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 30,
     padding: 4,
   },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     borderRadius: 26,
   },
   active: {
-    backgroundColor: '#00ff99',
+    backgroundColor: '#00ff88',
   },
   inactive: {
     backgroundColor: 'transparent',
@@ -260,12 +260,12 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(10, 30, 20, 0.6)',
     borderRadius: 30,
     marginBottom: 16,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#003e1d',
+    borderColor: '#2d5a45',
   },
   icon: {
     marginRight: 10,
@@ -277,13 +277,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   createButton: {
-    backgroundColor: '#00ff99',
+    backgroundColor: '#00ff88',
     borderRadius: 30,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
     flexDirection: 'row',
+    shadowColor: '#00ff88',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   createButtonText: {
     color: '#003e1d',
@@ -298,7 +303,7 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#003e1d',
+    backgroundColor: '#2d5a45',
   },
   dividerText: {
     color: '#7f7f7f',
@@ -309,11 +314,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(10, 30, 20, 0.6)',
     paddingVertical: 14,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#003e1d',
+    borderColor: '#2d5a45',
   },
   googleButtonText: {
     color: '#b3ffcb',
@@ -331,10 +336,10 @@ const styles = StyleSheet.create({
     height: 200,
   },
   block: {
-    width: 60,
-    height: 60,
-    backgroundColor: '#00ff99',
+    width: 70,
+    height: 70,
+    backgroundColor: '#00ff88',
     position: "absolute",
-    opacity: 0.3,
+    opacity: 0.4,
   },
 })
