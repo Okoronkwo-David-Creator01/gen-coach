@@ -21,8 +21,7 @@
       "@/*": [
         "./src/*"
       ]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   },
   "include": [
     "App.tsx",
@@ -34,6 +33,5 @@
 , "assets/index.tsx"  ],
   "exclude": [
     "node_modules"
-  ],
-  "extends": "expo/tsconfig.base"
+  ]
 }
