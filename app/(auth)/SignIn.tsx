@@ -1,11 +1,11 @@
-import { useSignIn, useOAuth } from '@clerk/clerk-expo'
+import { useSignIn } from '@clerk/clerk-expo'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
-import { makeRedirectUri } from 'expo-auth-session'
+import React, { useState } from 'react'
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from "react-native-safe-area-context"
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -15,30 +15,9 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false)
 
   const { isLoaded, signIn, setActive } = useSignIn()
-  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' })
   const router = useRouter()
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true)
-      const redirectUrl = makeRedirectUri({
-        scheme: 'gencoach',
-        path: '/oauth-native-callback'
-      })
-      
-      const { createdSessionId, setActive: setActiveSession } = await startOAuthFlow({ redirectUrl })
-      
-      if (createdSessionId && setActiveSession) {
-        await setActiveSession({ session: createdSessionId })
-        router.replace("/(tabs)")
-      }
-    } catch (error: any) {
-      console.error("Google OAuth error:", error)
-      Alert.alert("Error", "Failed to sign in with Google")
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Google OAuth button removed per new UX; handler deleted.
 
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
@@ -70,10 +49,16 @@ export default function SignIn() {
   }
 
   return (
-    <LinearGradient
-      colors={["#000000", "#001a0d", "#003319"]}
-      style={styles.container}
-    >
+    <View style={styles.screen}>
+      <LinearGradient
+        colors={["#001f0f", "#003e1d", "#007900"]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.contentWrapper}>
       <View style={styles.logoSection}>
         <Image 
           source={require("../../assets/images/gencoach1.png")} 
@@ -142,42 +127,38 @@ export default function SignIn() {
           {loading ? (
             <ActivityIndicator color="#003e1d" />
           ) : (
-            <Text style={styles.signInButtonText}>Sign In</Text>
+            <>
+              <Text style={styles.signInButtonText}>Continue to Gen‑Coach</Text>
+              <Ionicons name="arrow-forward" size={18} color="#003e1d" style={{ marginLeft: 8 }} />
+            </>
           )}
-        </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>Or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.googleButton, loading && styles.buttonDisabled]}
-          onPress={handleGoogleSignIn}
-          activeOpacity={0.8}
-          disabled={loading}
-        >
-          <Ionicons name="logo-google" size={18} color="#b3ffcb" />
-          <Text style={styles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.footerShapes}>
+      </View>
+      <View style={styles.footerShapes} pointerEvents="none">
         <View style={[styles.block, { bottom: 80, left: 20, transform: [{ rotate: '45deg' }] }]} />
         <View style={[styles.block, { bottom: 120, right: 60, transform: [{ rotate: '30deg' }] }]} />
         <View style={[styles.block, { bottom: 50, right: 20, transform: [{ rotate: '60deg' }] }]} />
       </View>
-    </LinearGradient>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  contentWrapper: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 20,
+    paddingTop: 56,
   },
   logoSection: {
     alignItems: 'center',
@@ -291,7 +272,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d5a45',
   },
   dividerText: {
-    color: '#7f7f7f',
+    color: '#fff',
     marginHorizontal: 12,
     fontSize: 13,
   },

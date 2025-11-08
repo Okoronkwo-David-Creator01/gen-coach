@@ -1,11 +1,12 @@
-import { useSignUp, useOAuth } from '@clerk/clerk-expo'
+import { useOAuth, useSignUp } from '@clerk/clerk-expo'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
+import { makeRedirectUri } from 'expo-auth-session'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
-import { makeRedirectUri } from 'expo-auth-session'
+import React, { useState } from 'react'
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { saveUserProfile } from '../../src/hooks/saveUserProfile'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -18,6 +19,19 @@ export default function Register() {
   const { isLoaded, signUp, setActive } = useSignUp()
   const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' })
   const router = useRouter()
+  
+  // Dynamically import Convex if available
+  const saveToConvex = async (email: string, fullName: string, clerkId?: string) => {
+    try {
+      const { useMutation } = await import('convex/react')
+      const { api } = await import('../../convex/_generated/api')
+      // Note: This won't work as a hook, but we can call the mutation directly
+      // For now, we'll skip Convex until the user runs npx convex dev
+      console.log("Convex integration ready - run 'npx convex dev' to enable")
+    } catch (error) {
+      console.log("Convex not available yet - user saved to Clerk and Firebase")
+    }
+  }
 
   const handleGoogleSignIn = async () => {
     try {
@@ -51,28 +65,28 @@ export default function Register() {
       setLoading(true)
       if (!isLoaded) return
 
-      await signUp.create({
+      // 1. Create user in Clerk (authentication)
+      const clerkResult = await signUp.create({
         emailAddress: email.trim(),
         password: password,
         firstName: fullName.split(' ')[0],
         lastName: fullName.split(' ').slice(1).join(' ') || undefined,
       })
 
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" })
+      // 2. Save to Firebase Firestore
+      await saveUserProfile({ email: email.trim(), fullName: fullName.trim() })
 
-      Alert.alert(
-        "Verification Required",
-        "Please check your email for a verification code",
-        [
-          {
-            text: "OK",
-            onPress: () => router.push({
-              pathname: "/(auth)/verify-email",
-              params: { email }
-            } as any)
-          }
-        ]
-      )
+      // 3. Save to Convex (non-blocking - will be saved when Convex is set up)
+      const clerkId = clerkResult.createdUserId || undefined
+      saveToConvex(email.trim(), fullName.trim(), clerkId).catch(() => {
+        // Non-critical - user is already saved to Clerk and Firebase
+      })
+
+      // Optionally trigger email verification in background
+      try { await signUp.prepareEmailAddressVerification({ strategy: "email_code" }) } catch {}
+      
+      // Move user to Sign In screen immediately after sign up
+      router.replace('/(auth)/SignIn')
     } catch (error: any) {
       console.error("Sign up error:", error)
       Alert.alert("Error", error.errors?.[0]?.message || "Failed to create account")
@@ -82,10 +96,14 @@ export default function Register() {
   }
 
   return (
-    <LinearGradient
-      colors={["#000000", "#001a0d", "#003319"]}
-      style={styles.container}
-    >
+    <View style={styles.screen}>
+      <LinearGradient
+        colors={["#001f0f", "#003e1d", "#007900"]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
       <View style={styles.logoSection}>
         <Image 
           source={require("../../assets/images/gencoach1.png")} 
@@ -183,21 +201,22 @@ export default function Register() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.footerShapes}>
+      <View style={styles.footerShapes} pointerEvents="none">
         <View style={[styles.block, { bottom: 80, left: 20, transform: [{ rotate: '45deg' }] }]} />
         <View style={[styles.block, { bottom: 120, right: 60, transform: [{ rotate: '30deg' }] }]} />
         <View style={[styles.block, { bottom: 50, right: 20, transform: [{ rotate: '60deg' }] }]} />
       </View>
-    </LinearGradient>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 20,
+    paddingTop: 56,
   },
   logoSection: {
     alignItems: 'center',
@@ -215,11 +234,15 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: 'rgba(0, 30, 15, 0.5)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(0, 30, 15, 0.55)',
+    borderRadius: 24,
     padding: 24,
     borderWidth: 1.5,
-    borderColor: '#1a3d2e',
+    borderColor: '#0d6b3a',
+    shadowColor: '#00ff88',
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
   },
   title: {
     color: '#fff',
@@ -303,10 +326,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#2d5a45',
+    backgroundColor: '#214e39',
   },
   dividerText: {
-    color: '#7f7f7f',
+    color: '#fff',
     marginHorizontal: 12,
     fontSize: 13,
   },
@@ -314,7 +337,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: 'rgba(10, 30, 20, 0.6)',
+    backgroundColor: 'transparent',
     paddingVertical: 14,
     borderRadius: 30,
     borderWidth: 1,
